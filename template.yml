@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: AWS Bill Export Solution
+
+Parameters:
+
+    AutomationUsername:
+        Description: The username of an IAM user created to perform automated actions
+        Type: String
+        Default: BillRetrieverAutomationUser
+
+Mappings:
+    RegionMap:
+        us-east-1:
+            bucketname: ianmckay-us-east-1
+        us-east-2:
+            bucketname: ianmckay-us-east-2
+        us-west-1:
+            bucketname: ianmckay-us-west-1
+        us-west-2:
+            bucketname: ianmckay-us-west-2
+        ap-south-1:
+            bucketname: ianmckay-ap-south-1
+        ap-northeast-2:
+            bucketname: ianmckay-ap-northeast-2
+        ap-southeast-1:
+            bucketname: ianmckay-ap-southeast-1
+        ap-southeast-2:
+            bucketname: ianmckay-ap-southeast-2
+        ap-northeast-1:
+            bucketname: ianmckay-ap-northeast-1
+        ca-central-1:
+            bucketname: ianmckay-ca-central-1
+        eu-central-1:
+            bucketname: ianmckay-eu-central-1
+        eu-west-1:
+            bucketname: ianmckay-eu-west-1
+        eu-west-2:
+            bucketname: ianmckay-eu-west-2
+        eu-west-3:
+            bucketname: ianmckay-eu-west-3
+        eu-north-1:
+            bucketname: ianmckay-eu-north-1
+        sa-east-1:
+            bucketname: ianmckay-sa-east-1
+
+Resources:
+
+    LambdaAPIGatewayPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref LambdaFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/*"
+
+    LambdaLogGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: /aws/lambda/BillRetriever
+            RetentionInDays: 14
+
+    LambdaFunction:
+        DependsOn:
+          - AutomationUser
+          - LambdaLogGroup
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: BillRetriever
+            Code:
+                S3Bucket:
+                    Fn::FindInMap:
+                      - RegionMap
+                      - !Ref 'AWS::Region'
+                      - bucketname
+                S3Key: 'billretriever/app.zip'
+            Handler: index.handler
+            Role: !GetAtt LambdaExecutionRole.Arn
+            Environment:
+                Variables:
+                    ACCOUNTID: !Ref AWS::AccountId
+                    SECRET_ARN: !Ref AutomationCredentials
+            Runtime: nodejs12.x
+            MemorySize: 1024
+            Timeout: 900
+    
+    LambdaExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                        Service:
+                          - lambda.amazonaws.com
+                    Action:
+                      - sts:AssumeRole
+            Path: /
+            Policies:
+              - PolicyName: root
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: Allow
+                        Action:
+                          - logs:CreateLogGroup
+                          - logs:CreateLogStream
+                          - logs:PutLogEvents
+                        Resource: arn:aws:logs:*:*:*
+                      - Effect: Allow
+                        Action:
+                          - secretsmanager:GetSecretValue
+                        Resource:
+                          - !Ref AutomationCredentials
+
+    AutomationUser:
+        DependsOn:
+          - AutomationCredentials
+        Type: AWS::IAM::User
+        Properties:
+            UserName: !Sub "{{resolve:secretsmanager:${AutomationCredentials}:SecretString:username}}"
+            LoginProfile:
+                Password: !Sub "{{resolve:secretsmanager:${AutomationCredentials}:SecretString:password}}"
+            ManagedPolicyArns:
+              - arn:aws:iam::aws:policy/job-function/Billing
+    
+    AutomationCredentials:
+        Type: AWS::SecretsManager::Secret
+        Properties:
+            Name: billing-retriever-automation-secret
+            Description: Contains secret data for billing retrieval
+            GenerateSecretString:
+                SecretStringTemplate: !Sub |
+                    {
+                        "username": "${AutomationUsername}"
+                    }
+                GenerateStringKey: "password"
+                PasswordLength: 30
+                ExcludeCharacters: '"@/\'
+    
+    HttpApi:
+        Type: AWS::ApiGatewayV2::Api
+        Properties:
+            Name: !Ref AWS::StackName
+            ProtocolType: HTTP
+            RouteSelectionExpression: "$request.method $request.path"
+            Version: "1.0"
+            CorsConfiguration:
+                AllowMethods:
+                  - GET
+                AllowOrigins:
+                  - "*"
+
+    HttpApiStage:
+        Type: AWS::ApiGatewayV2::Stage
+        Properties:
+            ApiId: !Ref HttpApi
+            AutoDeploy: true
+            StageName: "$default"
+
+    HttpApiGetCompletebillRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            AuthorizationType: NONE
+            RouteKey: "GET /completebill.json"
+            Target: !Sub "integrations/${HttpApiIntegration}"
+
+    HttpApiGetInvoicelistRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            AuthorizationType: NONE
+            RouteKey: "GET /invoicelist.json"
+            Target: !Sub "integrations/${HttpApiIntegration}"
+
+    HttpApiGetLinkedaccountbillsummaryRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            AuthorizationType: NONE
+            RouteKey: "GET /linkedaccountbillsummary.json"
+            Target: !Sub "integrations/${HttpApiIntegration}"
+
+    HttpApiGetTaxinvoicemetadataRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            AuthorizationType: NONE
+            RouteKey: "GET /taxinvoicemetadata.json"
+            Target: !Sub "integrations/${HttpApiIntegration}"
+
+    HttpApiIntegration:
+        Type: AWS::ApiGatewayV2::Integration
+        Properties:
+            ApiId: !Ref HttpApi
+            ConnectionType: INTERNET
+            IntegrationMethod: POST
+            IntegrationType: AWS_PROXY
+            IntegrationUri: !GetAtt LambdaFunction.Arn
+            PayloadFormatVersion: "2.0"
+
+Outputs:
+
+    Url:
+        Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"

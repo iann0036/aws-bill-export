@@ -1,0 +1,29 @@
+{
+  "name": "aws-bill-export",
+  "version": "0.1.0",
+  "description": "Download AWS bills from the console programmatically",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.658.0",
+    "chrome-aws-lambda": "^2.1.1",
+    "https": "^1.0.0",
+    "puppeteer-core": "^2.1.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.5",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iann0036/aws-bill-export.git"
+  },
+  "author": "Ian Mckay",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/iann0036/aws-bill-export/issues"
+  },
+  "homepage": "https://github.com/iann0036/aws-bill-export#readme"
+}
