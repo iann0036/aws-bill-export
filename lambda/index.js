@@ -1,7 +1,5 @@
 const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
-const AWS = require('aws-sdk');
-const fs = require('fs');
 const winston = require('winston')
 const rp = require('request-promise')
 
@@ -12,39 +10,20 @@ const LOG = winston.createLogger({
     ]
 });
 
-const s3 = new AWS.S3();
-const secretsmanager = new AWS.SecretsManager();
-
 var cookie = "";
 var xsrftoken = "";
 
 async function login(page) {
-    let secretsmanagerresponse = await secretsmanager.getSecretValue({
-        SecretId: process.env.SECRET_ARN
-    }).promise();
+    let signintoken = await rp('https://signin.aws.amazon.com/federation?Action=getSigninToken&SessionDuration=3600&Session=' + encodeURIComponent(JSON.stringify({
+        'sessionId': process.env.AWS_ACCESS_KEY_ID,
+        'sessionKey': process.env.AWS_SECRET_ACCESS_KEY,
+        'sessionToken': process.env.AWS_SESSION_TOKEN,
+    })));
 
-    let secretdata = JSON.parse(secretsmanagerresponse.SecretString);
-
-    var passwordstr = secretdata.password;
-
-    await page.goto('https://' + process.env.ACCOUNTID + '.signin.aws.amazon.com/console', {
+    await page.goto('https://signin.aws.amazon.com/federation?Action=login&Destination=https%3A%2F%2Fconsole.aws.amazon.com%2F&SigninToken=' + JSON.parse(signintoken)['SigninToken'], {
         timeout: 0,
         waitUntil: ['domcontentloaded']
     });
-
-    await page.waitFor(2000);
-
-    let username = await page.$('#username');
-    await username.press('Backspace');
-    await username.type(secretdata.username, { delay: 100 });
-
-    let password = await page.$('#password');
-    await password.press('Backspace');
-    await password.type(passwordstr, { delay: 100 });
-
-    await page.click('#signin_button');
-
-    await page.waitFor(5000);
 
     await page.goto('https://console.aws.amazon.com/billing/home?#/bills', {
         timeout: 0,

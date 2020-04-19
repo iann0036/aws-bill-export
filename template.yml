@@ -2,13 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: AWS Bill Export Solution
 
-Parameters:
-
-    AutomationUsername:
-        Description: The username of an IAM user created to perform automated actions
-        Type: String
-        Default: BillRetrieverAutomationUser
-
 Mappings:
     RegionMap:
         us-east-1:
@@ -62,7 +55,6 @@ Resources:
 
     LambdaFunction:
         DependsOn:
-          - AutomationUser
           - LambdaLogGroup
         Type: AWS::Lambda::Function
         Properties:
@@ -79,7 +71,6 @@ Resources:
             Environment:
                 Variables:
                     ACCOUNTID: !Ref AWS::AccountId
-                    SECRET_ARN: !Ref AutomationCredentials
             Runtime: nodejs12.x
             MemorySize: 1024
             Timeout: 900
@@ -97,6 +88,8 @@ Resources:
                     Action:
                       - sts:AssumeRole
             Path: /
+            ManagedPolicyArns:
+              - arn:aws:iam::aws:policy/job-function/Billing
             Policies:
               - PolicyName: root
                 PolicyDocument:
@@ -108,36 +101,6 @@ Resources:
                           - logs:CreateLogStream
                           - logs:PutLogEvents
                         Resource: arn:aws:logs:*:*:*
-                      - Effect: Allow
-                        Action:
-                          - secretsmanager:GetSecretValue
-                        Resource:
-                          - !Ref AutomationCredentials
-
-    AutomationUser:
-        DependsOn:
-          - AutomationCredentials
-        Type: AWS::IAM::User
-        Properties:
-            UserName: !Sub "{{resolve:secretsmanager:${AutomationCredentials}:SecretString:username}}"
-            LoginProfile:
-                Password: !Sub "{{resolve:secretsmanager:${AutomationCredentials}:SecretString:password}}"
-            ManagedPolicyArns:
-              - arn:aws:iam::aws:policy/job-function/Billing
-    
-    AutomationCredentials:
-        Type: AWS::SecretsManager::Secret
-        Properties:
-            Name: billing-retriever-automation-secret
-            Description: Contains secret data for billing retrieval
-            GenerateSecretString:
-                SecretStringTemplate: !Sub |
-                    {
-                        "username": "${AutomationUsername}"
-                    }
-                GenerateStringKey: "password"
-                PasswordLength: 30
-                ExcludeCharacters: '"@/\'
     
     HttpApi:
         Type: AWS::ApiGatewayV2::Api
