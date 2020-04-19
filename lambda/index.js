@@ -116,38 +116,6 @@ async function getLinkedAccountBillSummary(params) {
     return JSON.parse(res);
 }
 
-async function getTaxInvoiceMetadata(params) {
-    if (!params.month.match(/^[0-9]+$/g) || !params.year.match(/^[0-9]+$/g)) {
-        return {}
-    }
-
-    let res = await rp({
-        uri: 'https://console.aws.amazon.com/billing/rest/v1.0/bill/completebill?month=' + params.month + '&year=' + params.year,
-        headers: {
-            'accept': 'application/json, text/plain, */*',
-            'x-AWSBillingConsole-Region': 'us-east-1',
-            'x-awsbc-xsrf-token': xsrftoken,
-            'cookie': cookie
-        }
-    });
-
-    let bill = JSON.parse(res);
-
-    res = await rp({
-        uri: 'https://console.aws.amazon.com/billing/rest/v1.0/taxinvoice/newmetadata',
-        method: 'POST',
-        data: bill['lidsBillIdSet'],
-        headers: {
-            'accept': 'application/json, text/plain, */*',
-            'x-AWSBillingConsole-Region': 'us-east-1',
-            'x-awsbc-xsrf-token': xsrftoken,
-            'cookie': cookie
-        }
-    });
-
-    return JSON.parse(res);
-}
-
 exports.handler = async (event, context) => {
     LOG.debug(event);
 
@@ -172,8 +140,6 @@ exports.handler = async (event, context) => {
         resp = await getInvoiceList(event.queryStringParameters);
     } else if (event.routeKey == "GET /linkedaccountbillsummary.json") {
         resp = await getLinkedAccountBillSummary(event.queryStringParameters);
-    } else if (event.routeKey == "GET /taxinvoicemetadata.json") {
-        resp = await getTaxInvoiceMetadata(event.queryStringParameters);
     } else {
         return context.succeed();
     }
