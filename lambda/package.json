@@ -4,7 +4,7 @@
   "description": "Download AWS bills from the console programmatically",
   "main": "index.js",
   "dependencies": {
-    "aws-sdk": "^2.658.0",
+    "aws-sdk": "^2.814.0",
     "chrome-aws-lambda": "^2.1.1",
     "https": "^1.0.0",
     "puppeteer-core": "^2.1.1",
