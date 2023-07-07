@@ -14,7 +14,7 @@ var cookie = "";
 var xsrftoken = "";
 
 async function login(page) {
-    let signintoken = await rp('https://signin.aws.amazon.com/federation?Action=getSigninToken&SessionDuration=3600&Session=' + encodeURIComponent(JSON.stringify({
+    let signintoken = await rp('https://signin.aws.amazon.com/federation?Action=getSigninToken&Session=' + encodeURIComponent(JSON.stringify({
         'sessionId': process.env.AWS_ACCESS_KEY_ID,
         'sessionKey': process.env.AWS_SECRET_ACCESS_KEY,
         'sessionToken': process.env.AWS_SESSION_TOKEN,
