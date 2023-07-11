@@ -1,4 +1,4 @@
-const chromium = require('chrome-aws-lambda');
+const chromium = require("@sparticuz/chromium");
 const puppeteer = require('puppeteer-core');
 const winston = require('winston')
 const rp = require('request-promise')
@@ -143,7 +143,7 @@ exports.handler = async (event, context) => {
     let browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath,
+        executablePath: await chromium.executablePath(),
         headless: chromium.headless,
     });
 

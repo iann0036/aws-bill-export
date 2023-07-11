@@ -73,7 +73,7 @@ Resources:
                     ACCOUNTID: !Ref AWS::AccountId
             Runtime: nodejs18.x
             MemorySize: 1024
-            Timeout: 900
+            Timeout: 30  # maximum for http api is 30s
     
     LambdaExecutionRole:
         Type: AWS::IAM::Role
