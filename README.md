@@ -36,6 +36,12 @@ https://<baseurl>/invoicelist.json?month=3&year=2020
 https://<baseurl>/linkedaccountbillsummary.json?month=3&year=2020
 ```
 
+**Generate and download an invoice**
+```
+https://<baseurl>/generate.json?invoiceNumber=12345&invoiceGroupId=12345"
+https://<baseurl>/download.pdf?invoiceNumber=12345&invoiceGroupId=12345"
+```
+
 ## Notes
 
 Authentication and/or authorization is anonymous by default. This is left as an exercise for you.

@@ -95,6 +95,44 @@ async function getLinkedAccountBillSummary(params) {
     return JSON.parse(res);
 }
 
+async function getGenerate(params) {
+    if (!params.invoiceNumber.match(/^[0-9]+$/g) || !params.invoiceGroupId.match(/^[0-9]+$/g)) {
+        return {}
+    }
+
+    let res = await rp({
+        uri: 'https://us-east-1.console.aws.amazon.com/billing/rest/v1.0/bill/invoice/generate?invoicenumber='+ params.invoiceNumber + '&invoiceGroupId='+ params.invoiceGroupId +'&generatenew=true',
+        headers: {
+            'accept': 'application/json, text/plain, */*',
+            'x-AWSBillingConsole-Region': 'us-east-1',
+            'x-awsbc-xsrf-token': xsrftoken,
+            'cookie': cookie
+        }
+    });
+
+    return JSON.parse(res);
+}
+
+async function getDownload(params) {
+    if (!params.invoiceNumber.match(/^[0-9]+$/g) || !params.invoiceGroupId.match(/^[0-9]+$/g)) {
+        return;
+    }
+
+    let buf = await rp({
+        uri: 'https://us-east-1.console.aws.amazon.com/billing/rest/v1.0/bill/invoice/download?invoicenumber='+ params.invoiceNumber + '&invoiceGroupId='+ params.invoiceGroupId,
+        encoding: null,
+        headers: {
+            'accept': 'application/json, text/plain, */*',
+            'x-AWSBillingConsole-Region': 'us-east-1',
+            'x-awsbc-xsrf-token': xsrftoken,
+            'cookie': cookie
+        }
+    });
+
+    return buf;
+
+}
+
 exports.handler = async (event, context) => {
     LOG.debug(event);
 
@@ -113,23 +151,35 @@ exports.handler = async (event, context) => {
 
     await login(page);
     
+    contentType = "application/json";
+    isBase64Encoded = false;
     if (event.routeKey == "GET /completebill.json") {
         resp = await getCompleteBill(event.queryStringParameters);
+        body = JSON.stringify(resp)
     } else if (event.routeKey == "GET /invoicelist.json") {
         resp = await getInvoiceList(event.queryStringParameters);
+        body = JSON.stringify(resp)
     } else if (event.routeKey == "GET /linkedaccountbillsummary.json") {
         resp = await getLinkedAccountBillSummary(event.queryStringParameters);
+        body = JSON.stringify(resp)
+    } else if (event.routeKey == "GET /generate.json") {
+        resp = await getGenerate(event.queryStringParameters);
+        body = JSON.stringify(resp)
+    } else if (event.routeKey == "GET /download.pdf") {
+        contentType = "application/pdf";
+        buf = await getDownload(event.queryStringParameters);
+        isBase64Encoded = true;
+        body = buf.toString('base64');
     } else {
         return context.succeed();
     }
     
     return {
         "statusCode": 200,
-        "isBase64Encoded": false,
+        "isBase64Encoded": isBase64Encoded,
         "headers": {
-            "Content-Type": "application/json"
+            "Content-Type": contentType,
         },
-        "body": JSON.stringify(resp)
+        "body": body,
     };
 };
-
