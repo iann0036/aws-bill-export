@@ -96,7 +96,7 @@ async function getLinkedAccountBillSummary(params) {
 }
 
 async function getGenerate(params) {
-    if (!params.invoiceNumber.match(/^[0-9]+$/g) || !params.invoiceGroupId.match(/^[0-9]+$/g)) {
+    if (!params.invoiceNumber.match(/^[0-9A-Z-]+$/g) || !params.invoiceGroupId.match(/^[0-9A-Z-]+$/g)) {
         return {}
     }
 
@@ -114,7 +114,7 @@ async function getGenerate(params) {
 }
 
 async function getDownload(params) {
-    if (!params.invoiceNumber.match(/^[0-9]+$/g) || !params.invoiceGroupId.match(/^[0-9]+$/g)) {
+    if (!params.invoiceNumber.match(/^[0-9A-Z-]+$/g) || !params.invoiceGroupId.match(/^[0-9A-Z-]+$/g)) {
         return;
     }
 
