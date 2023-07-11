@@ -146,6 +146,23 @@ Resources:
             RouteKey: "GET /linkedaccountbillsummary.json"
             Target: !Sub "integrations/${HttpApiIntegration}"
 
+    HttpApiGetGenerateRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            AuthorizationType: NONE
+            RouteKey: "GET /generate.json"
+            Target: !Sub "integrations/${HttpApiIntegration}"
+
+    HttpApiGetDownloadRoute:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+            ApiId: !Ref HttpApi
+            AuthorizationType: NONE
+            RouteKey: "GET /download.pdf"
+            Target: !Sub "integrations/${HttpApiIntegration}"
+
+
     HttpApiIntegration:
         Type: AWS::ApiGatewayV2::Integration
         Properties:
