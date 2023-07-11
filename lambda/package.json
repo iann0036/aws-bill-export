@@ -5,9 +5,9 @@
   "main": "index.js",
   "dependencies": {
     "aws-sdk": "^2.814.0",
-    "chrome-aws-lambda": "^2.1.1",
     "https": "^1.0.0",
-    "puppeteer-core": "^2.1.1",
+    "puppeteer-core": "^19.8.0",
+    "@sparticuz/chromium": "^112.0.2",
     "request": "^2.88.0",
     "request-promise": "^4.2.5",
     "winston": "^3.2.1"
