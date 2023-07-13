@@ -2,6 +2,18 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: AWS Bill Export Solution
 
+Parameters:
+    AuthorizationType:
+        Type: String
+        Description: Type of auhtorization to use for the API Gateway
+        AllowedValues:
+          - AWS_IAM
+          - NONE
+        Default: NONE
+
+Conditions:
+    IamAuthorization: !Equals [!Ref AuthorizationType, AWS_IAM]
+
 Mappings:
     RegionMap:
         us-east-1:
@@ -126,7 +138,7 @@ Resources:
         Type: AWS::ApiGatewayV2::Route
         Properties:
             ApiId: !Ref HttpApi
-            AuthorizationType: NONE
+            AuthorizationType: !Ref AuthorizationType
             RouteKey: "GET /completebill.json"
             Target: !Sub "integrations/${HttpApiIntegration}"
 
@@ -134,7 +146,7 @@ Resources:
         Type: AWS::ApiGatewayV2::Route
         Properties:
             ApiId: !Ref HttpApi
-            AuthorizationType: NONE
+            AuthorizationType: !Ref AuthorizationType
             RouteKey: "GET /invoicelist.json"
             Target: !Sub "integrations/${HttpApiIntegration}"
 
@@ -142,7 +154,7 @@ Resources:
         Type: AWS::ApiGatewayV2::Route
         Properties:
             ApiId: !Ref HttpApi
-            AuthorizationType: NONE
+            AuthorizationType: !Ref AuthorizationType
             RouteKey: "GET /linkedaccountbillsummary.json"
             Target: !Sub "integrations/${HttpApiIntegration}"
 
@@ -150,7 +162,7 @@ Resources:
         Type: AWS::ApiGatewayV2::Route
         Properties:
             ApiId: !Ref HttpApi
-            AuthorizationType: NONE
+            AuthorizationType: !Ref AuthorizationType
             RouteKey: "GET /generate.json"
             Target: !Sub "integrations/${HttpApiIntegration}"
 
@@ -158,7 +170,7 @@ Resources:
         Type: AWS::ApiGatewayV2::Route
         Properties:
             ApiId: !Ref HttpApi
-            AuthorizationType: NONE
+            AuthorizationType: !Ref AuthorizationType
             RouteKey: "GET /download.pdf"
             Target: !Sub "integrations/${HttpApiIntegration}"
 
@@ -173,7 +185,24 @@ Resources:
             IntegrationUri: !GetAtt LambdaFunction.Arn
             PayloadFormatVersion: "2.0"
 
+    HttpApiInvokePolicy:
+        Type: AWS::IAM::ManagedPolicy
+        Condition: IamAuthorization
+        Properties:
+            Description: !Sub "Allows usage of the HttpApi in ${AWS::StackName}"
+            PolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                    Effect: Allow
+                    Action: execute-api:Invoke
+                    Resource: !Sub "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/${HttpApiStage}/GET/*"
+
 Outputs:
 
     Url:
         Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    HttpApiInvokePolicy:
+        Value: !If
+            - IamAuthorization
+            - !Ref HttpApiInvokePolicy
+            - ""
