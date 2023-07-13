@@ -44,5 +44,5 @@ https://<baseurl>/download.pdf?invoiceNumber=12345&invoiceGroupId=12345"
 
 ## Notes
 
-- Authentication and/or authorization is anonymous by default. This is left as an exercise for you.
+- Authentication and/or authorization is anonymous by default, and a basic IAM authentication/authorization is available via the `AuthorizationType` . Configuring this to match your environment is left as an exercise for you.
 - You have to keep puppeteer-core and @sparticuz/chromium in sync if you update packages. See the [sparticuz/chromium readme](https://github.com/sparticuz/chromium) for instructions.
